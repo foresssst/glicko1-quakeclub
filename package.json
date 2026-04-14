@@ -1,0 +1,25 @@
+{
+  "name": "glicko1-quakeclub",
+  "version": "0.1.0",
+  "description": "Sistema de rating Glicko-1 en TypeScript con ajustes de calidad (anti-farming, upset bonus, margin of victory, streak protection, team result modifier, quit penalty).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "example": "tsx examples/basic-usage.ts"
+  },
+  "keywords": [
+    "glicko",
+    "glicko-1",
+    "rating",
+    "elo",
+    "matchmaking",
+    "leaderboard"
+  ],
+  "author": "Jose Bustos",
+  "license": "MIT",
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.0.0"
+  }
+}
