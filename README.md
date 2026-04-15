@@ -1,40 +1,16 @@
 # glicko1-quakeclub
 
-Sistema de rating Glicko-1 en TypeScript con un set de ajustes encima,
-pensado para que el ELO se sienta justo en comunidades chicas.
+Sistema de rating Glicko-1 reescrito en TypeScript con un set propios de ajustes encima, pensado para que el rating final sea siempre lo mas justo posible para todos.
 
 Es el mismo motor que uso en [quakeclub.com](https://quakeclub.com),
-una plataforma comunitaria para la escena chilena de Quake Live.
-Arrancó porque el rating que teníamos (el de QLStats) no alcanzaba
-para lo que necesitábamos: queríamos algo propio para la comunidad
-latinoamericana, que manejara varios modos (CA, CTF, Duel, TDM, FT,
-AD, DOM, FFA) y que no castigara feo a los tops ni dejara sin
-progreso a los underdogs.
-
-## Por qué no alcanza con Glicko puro
-
-Glicko-1 es matemáticamente correcto, pero en una población chica
-aparecen problemas de percepción:
-
-- Un top pierde muchísimo rating por caer contra un amigo peor (aunque
-  estadísticamente tenga sentido).
-- Un underdog apenas suma cuando le gana al favorito.
-- Un jugador en racha de derrotas cae en espiral y deja de jugar.
-- En juegos por equipos el rating individual puede subir aunque el
-  equipo haya perdido, lo que rompe la intuición del jugador.
-- Un 10-9 y un 10-0 en CA mueven exactamente lo mismo, cuando uno fue
-  casi un empate y el otro una paliza.
-
-Glicko puro (archivo `src/glicko1.ts`) queda intacto. Lo que agrega
-esta librería es una capa de ajustes sobre el delta crudo.
+una plataforma comunitaria para la escena chilena y latinoamericana de Quake Live.
 
 ## Flujo
 
 1. Se calcula el delta crudo con Glicko-1 estándar (rating + RD).
 2. Ese delta pasa por los modificadores habilitados.
 3. Se devuelve el delta final y un array con el detalle de qué reglas
-   se aplicaron y por qué (pensado para mostrarlo en la UI del
-   post-partida).
+   se aplicaron y por qué.
 
 Cada modificador es una función pura y se prende/apaga desde
 `ADJUSTMENTS_CONFIG` en `src/rating-adjustments.ts`.
@@ -51,11 +27,10 @@ Si pierdes contra alguien peor que tú, la pérdida se topa.
 | +400                   | -8             |
 | +500 o más             | -5             |
 
-Solo aplica a derrotas del favorito. Evita que un top pierda 40
-puntos por caer contra un amigo.
+Esto esta pensado solamente para derrotas del MVP
 
 ### Upset Bonus
-Si le ganaste a alguien mejor, sumas extra.
+Si le ganaste a alguien mejor, sumas ELO extra.
 
 | Desventaja vs el rival | Multiplicador |
 |------------------------|---------------|
@@ -64,7 +39,7 @@ Si le ganaste a alguien mejor, sumas extra.
 | -300                   | x1.35         |
 | -400 o más             | x1.50         |
 
-Solo aplica a victorias del underdog. Recompensa el logro.
+Pensado para recompensar el logro.
 
 ### Anti-Farming
 Si le ganaste a alguien mucho peor, sumas menos.
@@ -75,13 +50,13 @@ Si le ganaste a alguien mucho peor, sumas menos.
 | +400                   | x0.65     |
 | +500 o más             | x0.50     |
 
-Desincentiva a los tops que quieren farmear rating contra jugadores
+Desincentiva a los mejores que quieren farmear rating contra jugadores
 nuevos.
 
 ### Margin of Victory
 Una partida peleada mueve menos el rating que una paliza. El factor
 va de 0.6 a 1.0 según qué tan cerca estuvo el marcador del "margen
-máximo" calibrado para ese modo:
+máximo" calibrado para ese gametype:
 
 | Modo | Margen donde el factor llega a 1.0 |
 |------|------------------------------------|
@@ -91,16 +66,15 @@ máximo" calibrado para ese modo:
 | TDM  | 30                                 |
 | FFA  | 20                                 |
 
-No son límites canónicos del modo, son valores de calibración: por
-encima de esa diferencia se considera paliza plena y el cambio se
-aplica al 100%. Un 10-9 en CA aplica cerca de x0.6, un 10-2 aplica
-x1.0. Están ajustados para Quake Live, si lo usas en otro juego
-reemplazá el helper `calculateMarginOfVictory`.
+Esto no son límites canónicos de los gametypes, son valores de calibración: por encima de esa diferencia se considera paliza plena y el cambio se
+aplica al 100%. Un 10-9 en CA por ejemplo, aplica cerca de x0.6, un 10-2 aplica
+x1.0. Están ajustados para Quake Live, si lo adaptas en un en otro juego
+similar tendras que reemplazar el helper `calculateMarginOfVictory`.
 
 ### Streak Protection
 Dos comportamientos según vayas perdiendo o ganando:
 
-**Protección de racha perdedora** (amortigua la pérdida):
+**Protección de racha perdedora** (amortigua la mala racha):
 
 | Derrotas seguidas | Multiplicador |
 |-------------------|---------------|
@@ -108,7 +82,7 @@ Dos comportamientos según vayas perdiendo o ganando:
 | 6                 | x0.80         |
 | 8                 | x0.70         |
 
-**Bonus de racha ganadora** (premia la racha):
+**Bonus de racha ganadora** (premia la buena racha):
 
 | Victorias seguidas | Multiplicador |
 |--------------------|---------------|
@@ -129,21 +103,16 @@ importar. La regla:
   ido bien... **salvo** que hayas rendido en el top (sobre 78% por
   defecto), en cuyo caso tu ELO queda protegido.
 
-`performanceRank` se pasa entre 0.0 (peor del server) y 1.0 (mejor).
+`performanceRank` se pasa entre 0.0 (el peor de un match) y 1.0 (el mejor).
 
 ### Quit Penalty
 Si abandonas la partida, el cambio se vuelve negativo siempre, se
 multiplica por 2 y tiene un piso de -30 ELO.
 
-En Duel se desactiva porque el abandono ya se modela como derrota
-forzada desde la capa que llama al sistema.
+En el caso de duel este se desactiva porque el abandono ya se modela como derrota forzada desde la capa que llama al sistema.
 
 **Nota**: esta librería solo penaliza el quit de esa partida en
-particular. El tracking de abandonos reiterados (por ejemplo "5 quits
-en 7 días = penalización adicional") vive fuera, en la capa que
-consume el rating. En quakeclub.com eso lo maneja un plugin
-server-side que detecta el patrón y después llama a la librería con
-`hasQuit: true`.
+particular.
 
 ### Floor Protection
 El rating no puede bajar de un piso absoluto (300 por defecto). Al
@@ -172,7 +141,7 @@ import {
 const forest = createGlicko1Player(1500, 200);
 const hexen  = createGlicko1Player(1400, 180);
 
-// forest le gana 10-7 a hexen en CA
+// forest le gana 10-7 a hexen en un CA
 const period = getRatingPeriod();
 const actualizado = updateGlicko1Rating(
   forest,
@@ -201,18 +170,17 @@ console.log(ajustado.adjustedChange);   // delta final
 console.log(ajustado.adjustments);      // qué reglas se activaron
 ```
 
-El array `adjustments` está pensado para mostrarse en la UI del
-post-partida: el jugador ve exactamente por qué su ELO se movió lo
-que se movió.
+El array `adjustments` está pensado para mostrarse en una UI del
+post-partida: el jugador en el sitio web ve exactamente por qué su ELO se movió lo / que se movió.
 
 ## Score de rendimiento
 
 El módulo `performance` convierte stats crudas del juego (kills,
 deaths, daño, capturas, etc.) en un número único comparable entre
-modos. No es un rating, es un insumo que se usa después para calcular
+modos. No es un rating, es un insumo que se utilizara después para calcular
 el `performanceRank` que entra al `teamResultModifier`.
 
-Las fórmulas por modo están en `src/performance.ts`. Ejemplo de CTF:
+Las fórmulas por modo están en `src/performance.ts`. Ejemplo para un CTF:
 
 ```
 damageRatio * (score + damageDealt / 20) * timeFactor
@@ -223,9 +191,7 @@ realmente activo (rondas jugadas sobre totales, o tiempo vivo).
 
 ## Valores por defecto
 
-Calibrados para una comunidad de cientos de jugadores activos. Si la
-población es mucho más grande conviene reducir el RD inicial y el
-tope de cambio por partida.
+Estos estan calibrados para una comunidad de cientos de jugadores activos. Si la población es mucho más grande conviene reducir el RD inicial y el tope de cambio por partida.
 
 - Rating inicial: 900
 - RD inicial: 350 (jugador nuevo, máxima incertidumbre)
@@ -234,14 +200,7 @@ tope de cambio por partida.
 - Piso que aplican los ajustes: 300
 - Tope de cambio por partida: 150
 
-Todo está en `src/glicko1.ts` y `src/rating-adjustments.ts` para
-calibrar.
-
-## Heads up
-
-Esto es Glicko-1, no Glicko-2. No tiene volatility. Para la mayoría
-de los casos el 1 alcanza, pero si necesitas Glicko-2 esta librería
-no sirve.
+Todo está en `src/glicko1.ts` y `src/rating-adjustments.ts`.
 
 ## Licencia
 
