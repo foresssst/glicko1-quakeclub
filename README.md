@@ -201,7 +201,3 @@ Estos estan calibrados para una comunidad de cientos de jugadores activos. Si la
 - Tope de cambio por partida: 150
 
 Todo está en `src/glicko1.ts` y `src/rating-adjustments.ts`.
-
-## Licencia
-
-MIT. Úsalo como quieras.
