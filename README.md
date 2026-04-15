@@ -171,7 +171,7 @@ console.log(ajustado.adjustments);      // qué reglas se activaron
 El array `adjustments` está pensado para mostrarse en una UI del
 post-partida: el jugador en el sitio web ve exactamente por qué su ELO se movió lo / que se movió.
 
-## Score de rendimiento
+## Performance
 
 El módulo `performance` convierte stats crudas del juego (kills,
 deaths, daño, capturas, etc.) en un número único comparable entre
