@@ -1,11 +1,9 @@
 # glicko1-quakeclub
 
-Sistema de rating Glicko-1 reescrito en TypeScript con un set propios de ajustes encima, pensado para que el rating final sea siempre lo mas justo posible para todos.
+Este es el sistema de rating Glicko-1 reescrito en TypeScript con un set propios de ajustes encima, pensado para que el rating final sea siempre lo mas justo posible para todos.
+En escencia, es el mismo motor que se usa en [quakeclub.com](https://quakeclub.com), una plataforma comunitaria para la escena chilena y latinoamericana de Quake Live.
 
-Es el mismo motor que uso en [quakeclub.com](https://quakeclub.com),
-una plataforma comunitaria para la escena chilena y latinoamericana de Quake Live.
-
-## Flujo
+## Flujo de trabajo
 
 1. Se calcula el delta crudo con Glicko-1 estándar (rating + RD).
 2. Ese delta pasa por los modificadores habilitados.
@@ -15,7 +13,7 @@ una plataforma comunitaria para la escena chilena y latinoamericana de Quake Liv
 Cada modificador es una función pura y se prende/apaga desde
 `ADJUSTMENTS_CONFIG` en `src/rating-adjustments.ts`.
 
-## Los modificadores
+## MODIFICADORES
 
 ### Loss Forgiveness
 Si pierdes contra alguien peor que tú, la pérdida se topa.
@@ -41,7 +39,7 @@ Si le ganaste a alguien mejor, sumas ELO extra.
 
 Pensado para recompensar el logro.
 
-### Anti-Farming
+### Anti Farmeo
 Si le ganaste a alguien mucho peor, sumas menos.
 
 | Ventaja sobre el rival | Reducción |
